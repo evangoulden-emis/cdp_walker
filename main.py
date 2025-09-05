@@ -1,6 +1,8 @@
 from netmiko import ConnectHandler
 import ipaddress
 from getpass import getpass
+from rich import print as rprint
+from rich import inspect
 
 CORES = [
     "10.139.2.96",
@@ -15,9 +17,9 @@ def main():
 
     for core in CORES:
         with ConnectHandler(device_type='cisco_ios', ip=core, username=username, password=password) as net_connect:
-            print(net_connect.find_prompt())
+            rprint(net_connect.find_prompt())
             core_cdp_info = net_connect.send_command("show cdp neighbor detail", use_textfsm=True)
-            print(core_cdp_info)
+            rprint(core_cdp_info)
 
 
 if __name__ == "__main__":
