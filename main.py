@@ -3,7 +3,7 @@ import ipaddress
 from getpass import getpass
 
 CORES = [
-    "10.10.20.1",
+    "10.139.2.96",
     "10.10.20.2",
 ]
 
