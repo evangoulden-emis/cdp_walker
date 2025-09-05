@@ -19,7 +19,7 @@ def main():
         with ConnectHandler(device_type='cisco_ios', ip=core, username=username, password=password) as net_connect:
             rprint(net_connect.find_prompt())
             core_cdp_info = net_connect.send_command("show cdp neighbor detail", use_textfsm=True)
-            rprint(core_cdp_info)
+            rprint(inspect(core_cdp_info))
 
 
 if __name__ == "__main__":
