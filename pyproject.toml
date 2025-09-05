@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "cdp-walker"
+version = "0.1.0"
+description = ""
+authors = ["evlaa1990 <127751286+evangoulden-emis@users.noreply.github.com>"]
+
+#requires-python = ">=3.9"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
+netmiko = "^4.6.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
