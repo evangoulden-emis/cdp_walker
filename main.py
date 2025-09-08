@@ -1,13 +1,18 @@
 from netmiko import ConnectHandler
-import ipaddress
 from getpass import getpass
 from rich import print as rprint
 from rich import inspect
 
+
+discovery_output = []
 CORES = [
     "10.139.2.96",
-    "10.10.20.2",
+    "TBC",
 ]
+
+DISCOVERY_COMMANDS = [
+    "show cdp neighbor detail",
+    "show lldp neighbors detail"]
 
 def main():
     print("Enter username: ")
@@ -18,10 +23,10 @@ def main():
     for core in CORES:
         with ConnectHandler(device_type='cisco_ios', ip=core, username=username, password=password) as net_connect:
             rprint(net_connect.find_prompt())
-            core_cdp_info = net_connect.send_command("show cdp neighbor detail", use_textfsm=True)
-            rprint(inspect(core_cdp_info, methods=True))
-            for item in core_cdp_info:
-                print(item["neighbor_name"])
+            for command in DISCOVERY_COMMANDS:
+                rprint(f"Sending command: {command}")
+                discovery_output.append(net_connect.send_command(command, use_textfsm=True))
+                rprint(discovery_output)
 
 
 if __name__ == "__main__":
