@@ -20,6 +20,8 @@ def main():
             rprint(net_connect.find_prompt())
             core_cdp_info = net_connect.send_command("show cdp neighbor detail", use_textfsm=True)
             rprint(inspect(core_cdp_info, methods=True))
+            for item in core_cdp_info:
+                print(item["neighbor_name"])
 
 
 if __name__ == "__main__":
