@@ -3,6 +3,8 @@ from getpass import getpass
 from rich import print as rprint
 from rich import inspect
 from pprint import pprint as pp
+from netmiko import ConnectHandler
+from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
 
 CORES = [
     "10.139.2.96",
@@ -46,6 +48,8 @@ def main():
             print("Device Info Size: ", len(discovery_info))
 
 
+
+
 def connect_to_core(core, username, password, discovery_info):
     if core in visited_devices:
         rprint(f"[yellow]Already visited {core}, skipping.[/yellow]")
@@ -54,15 +58,24 @@ def connect_to_core(core, username, password, discovery_info):
     visited_devices.add(core)
     temp_discovery_info = {}
 
-    with ConnectHandler(device_type='cisco_ios', ip=core, username=username, password=password) as net_connect:
-        dev_name = net_connect.find_prompt().strip("#")
-        rprint(f"[green]Connecting to {dev_name}[/green]")
+    try:
+        with ConnectHandler(device_type='cisco_ios', ip=core, username=username, password=password) as net_connect:
+            dev_name = net_connect.find_prompt().strip("#")
+            rprint(f"[green]Connecting to {dev_name}[/green]")
 
-        for k, v in DISCOVERY_COMMANDS.items():
-            rprint(f"Sending command: {v}")
-            temp_discovery_info[dev_name + "_" + k] = net_connect.send_command(v, use_textfsm=True)
+            for k, v in DISCOVERY_COMMANDS.items():
+                rprint(f"Sending command: {v}")
+                temp_discovery_info[dev_name + "_" + k] = net_connect.send_command(v, use_textfsm=True)
 
-    check_duplicate(temp_discovery_info, discovery_info)
+            check_duplicate(temp_discovery_info, discovery_info)
+
+    except NetmikoTimeoutException:
+        rprint(f"[red]Timeout connecting to {core}[/red]")
+    except NetmikoAuthenticationException:
+        rprint(f"[red]Authentication failed for {core}[/red]")
+    except Exception as e:
+        rprint(f"[red]Unexpected error connecting to {core}: {e}[/red]")
+
 
 
 def check_duplicate(temp_discovery_info, discovery_info):
