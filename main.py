@@ -29,7 +29,6 @@ def main():
     for device in discovery_info.items():
         rprint("Device: " + str(device))
         for entry in device:
-            rprint("Entry: " + entry)
             if "cisco" in entry["platform"].lower():
                 connect_to_core(entry["mgmt_address"], username, password, discovery_info)
 
