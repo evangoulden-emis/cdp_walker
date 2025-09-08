@@ -29,12 +29,17 @@ def main():
     pp(inspect(discovery_info))
 
     # Loop through the list and check if the platform contains Cisco, if it does initiate another connection to this switch and perform the same discovery commands.
-    for device in discovery_info.items():
-        rprint("Device: " + str(device))
-        for entry in device[0]:
-            if "cisco" in entry["platform"].lower():
-                connect_to_core(entry["mgmt_address"], username, password, discovery_info)
-
+    for device, neighbors in discovery_info.items():
+        for neighbor in neighbors:
+            local_int = neighbor.get('local_interface')
+            neighbor_name = neighbor.get('neighbor_name')
+            mgmt_ip = neighbor.get('mgmt_address')
+            platform = neighbor.get('platform')
+            print(f"  Local Interface: {local_int}")
+            print(f"  Neighbor Name: {neighbor_name}")
+            print(f"  Management IP: {mgmt_ip}")
+            print(f"  Platform: {platform}")
+            print("---")
 
 
 def connect_to_core(core, username, password, discovery_info):
