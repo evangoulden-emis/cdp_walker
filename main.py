@@ -24,9 +24,9 @@ def main():
     for core in CORES:
         connect_to_core(core, username, password, discovery_info)
 
-    rprint(discovery_info)
-    pp(discovery_info)
-    pp(inspect(discovery_info))
+    # rprint(discovery_info)
+    # pp(discovery_info)
+    # pp(inspect(discovery_info))
 
     # Loop through the list and check if the platform contains Cisco, if it does initiate another connection to this switch and perform the same discovery commands.
     for device, neighbors in discovery_info.items():
