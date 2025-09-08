@@ -29,7 +29,7 @@ def main():
     for device in discovery_info.values():
         for entry in device:
             if "cisco" in entry["platform"].lower():
-                connect_to_core(entry["dest_ip"], username, password, discovery_info)
+                connect_to_core(entry["mgmt_address"], username, password, discovery_info)
 
 
 
