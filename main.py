@@ -9,10 +9,10 @@ CORES = [
     "10.139.2.96",
 ]
 
-DISCOVERY_COMMANDS = [
-    "show cdp neighbor detail",
-    "show lldp neighbors detail"]
-
+DISCOVERY_COMMANDS = {
+    "cdp" : "show cdp neighbor detail",
+    "lldp": "show lldp neighbors detail"
+}
 def main():
     discovery_info = {}
     print("Enter username: ")
@@ -37,9 +37,9 @@ def connect_to_core(core, username, password, discovery_info):
     with ConnectHandler(device_type='cisco_ios', ip=core, username=username, password=password) as net_connect:
         dev_name = net_connect.find_prompt().strip("#")
         rprint(f"Connecting to {dev_name}")
-        for command in DISCOVERY_COMMANDS:
-            rprint(f"Sending command: {command}")
-            discovery_info[dev_name] = net_connect.send_command(command, use_textfsm=True)
+        for k,v in DISCOVERY_COMMANDS:
+            rprint(f"Sending command: {v}")
+            discovery_info[dev_name + "_" + k] = net_connect.send_command(v, use_textfsm=True)
 
 
 
