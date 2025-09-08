@@ -26,8 +26,8 @@ def main():
 
     rprint(discovery_info)
     # Loop through the list and check if the platform contains Cisco, if it does initiate another connection to this switch and perform the same discovery commands.
-    for device in discovery_info.values():
-        rprint("Device: " + device)
+    for device in discovery_info.items():
+        rprint("Device: " + str(device))
         for entry in device:
             rprint("Entry: " + entry)
             if "cisco" in entry["platform"].lower():
