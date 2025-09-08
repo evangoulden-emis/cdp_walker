@@ -74,3 +74,7 @@ def check_duplicate(temp_discovery_info, discovery_info):
             for neighbor in new_neighbors:
                 if neighbor not in existing_neighbors:
                     existing_neighbors.append(neighbor)
+
+
+if __name__ == "__main__":
+    main()
