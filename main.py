@@ -7,7 +7,6 @@ from rich import inspect
 
 CORES = [
     "10.139.2.96",
-    "TBC",
 ]
 
 DISCOVERY_COMMANDS = [
