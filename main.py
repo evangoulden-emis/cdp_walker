@@ -53,7 +53,7 @@ def main():
         
             
 
-def connect_to_nd(network_device, username, password, discovery_info, neighbor_name, platform):
+def connect_to_nd(network_device, username, password, discovery_info, neighbor_name, platform="Unknown"):
     if network_device in visited_devices:
         rprint(f"[yellow]Already visited {network_device}, skipping.[/yellow]")
         return
