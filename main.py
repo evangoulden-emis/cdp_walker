@@ -68,6 +68,8 @@ def connect_and_discover(device, username, password):
                         mgmt_ip = neighbor.get("mgmt_address")
                         neighbor_name = neighbor.get("neighbor_name")
                         platform = neighbor.get("platform", "Unknown")
+                        print("Neighbor raw data:", neighbor)
+                        print("Parsed mgmt_ip:", mgmt_ip)
 
                         if mgmt_ip and "cisco" in platform.lower() and mgmt_ip not in visited_devices:
                             discovered_neighbors.append({
@@ -104,6 +106,7 @@ def main():
     while device_queue:
         device = device_queue.pop(0)
         new_neighbors = connect_and_discover(device, username, password)
+        print("New neighbors discovered:", len(new_neighbors) if new_neighbors else 0)
         if new_neighbors:
             device_queue.extend(new_neighbors)
         print("-" * 40)
