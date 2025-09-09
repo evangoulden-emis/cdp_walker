@@ -46,6 +46,11 @@ def main():
                 connect_to_nd(mgmt_ip, username, password, discovery_info)
 
             print("Device Info Size: ", len(discovery_info))
+    
+    # Write the discovery_info to a file
+    with open("discovery_info.txt", "w") as f:
+        pp(discovery_info, stream=f)
+        
             
 
 def connect_to_nd(network_device, username, password, discovery_info):
