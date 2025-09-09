@@ -22,12 +22,16 @@ def get_credentials():
     return username, password
 
 
-def initialize_queue(devices, root_tree):
+# Queue is a list of devices to be processed.
+def initialize_queue(devices=None):
+    if devices is None:
+        nd = [network_devices[0]]
     return [{
-        "ip": ip,
+        "ip": nd,
         "neighbor_name": "Root Device",
-        "platform": "Unknown",
-        "parent": root_tree  # this is the actual root of the tree
+        "platform": "Cisco 3850",
+        "device_name": "Root",
+        "parent": ""  # this is the actual root of the tree
     } for ip in devices]
 
 
@@ -44,6 +48,7 @@ def connect_and_discover(device, username, password):
 
     try:
         with ConnectHandler(device_type='cisco_ios', ip=ip, username=username, password=password) as net_connect:
+            current_device_facts = get_facts_from_current_device(net_connect)
             dev_name = net_connect.find_prompt().strip("#")
             rprint(f"[green]Connected to {dev_name} ({ip})[/green]")
 
@@ -60,7 +65,7 @@ def connect_and_discover(device, username, password):
             discovered_neighbors = []
 
             for cmd in DISCOVERY_COMMANDS.values():
-                rprint(f"Sending command: {cmd}")
+                rprint(f"Sending command: '{cmd}' to {dev_name} ({ip})")
                 neighbors = net_connect.send_command(cmd, use_textfsm=True)
 
                 if isinstance(neighbors, list):
@@ -68,8 +73,6 @@ def connect_and_discover(device, username, password):
                         mgmt_ip = neighbor.get("mgmt_address")
                         neighbor_name = neighbor.get("neighbor_name")
                         platform = neighbor.get("platform", "Unknown")
-                        print("Neighbor raw data:", neighbor)
-                        print("Parsed mgmt_ip:", mgmt_ip)
 
                         if mgmt_ip and "cisco" in platform.lower() and mgmt_ip not in visited_devices:
                             discovered_neighbors.append({
@@ -79,7 +82,7 @@ def connect_and_discover(device, username, password):
                                 "parent": current_node["neighbors"]
                             })
 
-            return discovered_neighbors
+            return (current_device_facts, discovered_neighbors)
 
     except NetmikoTimeoutException:
         rprint(f"[red]Timeout connecting to {neighbor_name} - {ip} - {platform}[/red]")
@@ -100,21 +103,24 @@ def main():
     username, password = get_credentials()
     discovery_tree = {}  # root of the tree
 
-    # Pass discovery_tree into the queue initializer
-    device_queue = initialize_queue(network_devices, discovery_tree)
+    device_queue = initialize_queue()
 
     while device_queue:
         device = device_queue.pop(0)
-        new_neighbors = connect_and_discover(device, username, password)
-        print("New neighbors discovered:", len(new_neighbors) if new_neighbors else 0)
+        device_facts, new_neighbors = connect_and_discover(device, username, password)
         if new_neighbors:
             device_queue.extend(new_neighbors)
-        print("-" * 40)
-        print(f"Devices left to process: {len(device_queue)}")
-        print(f"Visited devices: {len(visited_devices)}")
-        print(f"Current tree size: {len(discovery_tree)}")
-        print("-" * 40)
+            
     write_tree_to_file(discovery_tree)
+
+
+def get_facts_from_current_device(net_connect):
+    facts = {}
+    facts['hostname'] = net_connect.find_prompt().strip("#")
+    version_output = net_connect.send_command("show version", use_textfsm=True)
+    if isinstance(version_output, list) and version_output:
+        facts.update(version_output[0])
+    return facts
 
 
 if __name__ == "__main__":
