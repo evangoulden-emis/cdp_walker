@@ -1,105 +1,108 @@
+import json
 from netmiko import ConnectHandler
 from getpass import getpass
 from rich import print as rprint
-from rich import inspect
-from pprint import pprint as pp
-from netmiko import ConnectHandler
 from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
 
-network_devices = [
-    "10.139.2.96",
-]
+# Starting point(s)
+network_devices = ["10.139.2.96"]
 
+# CDP/LLDP commands
 DISCOVERY_COMMANDS = {
-    "cdp" : "show cdp neighbor detail",
+    "cdp": "show cdp neighbor detail",
     "lldp": "show lldp neighbors detail"
 }
 
 visited_devices = set()
 
-def main():
-    discovery_info = {}
-    visited_devices.clear()
-
+def get_credentials():
     print("Enter username: ", end="")
     username = input()
     password = getpass(prompt="Enter Password: ")
+    return username, password
 
-    for network_device in network_devices:
-        connect_to_nd(network_device, username, password, discovery_info, neighbor_name="Root Device")
+def initialize_queue(devices):
+    return [{
+        "ip": ip,
+        "neighbor_name": "Root Device",
+        "platform": "Unknown",
+        "parent": {}  # root of the tree
+    } for ip in devices]
 
-    for _, neighbors in discovery_info.items():
-        for neighbor in neighbors:
-            local_int = neighbor.get('local_interface')
-            neighbor_name = neighbor.get('neighbor_name')
-            mgmt_ip = neighbor.get('mgmt_address')
-            platform = neighbor.get('platform')
-            print("   Neighbor Details:")
-            print("---------------")
-            print(f"  Local Interface: {local_int}")
-            print(f"  Neighbor Name: {neighbor_name}")
-            print(f"  Management IP: {mgmt_ip}")
-            print(f"  Platform: {platform}")
-            print("---------------")
+def connect_and_discover(device, username, password):
+    ip = device["ip"]
+    neighbor_name = device["neighbor_name"]
+    platform = device["platform"]
+    parent_node = device["parent"]
 
-            if "cisco" in platform.lower() and mgmt_ip not in visited_devices:
-                connect_to_nd(mgmt_ip, username, password, discovery_info, neighbor_name, platform=platform)
+    if ip in visited_devices:
+        return None
 
-            print("Device Info Size: ", len(discovery_info))
-    
-    # Write the discovery_info to a file
-    with open("discovery_info.txt", "w") as f:
-        pp(discovery_info, stream=f)
-        
-            
-
-def connect_to_nd(network_device, username, password, discovery_info, neighbor_name, platform="Unknown"):
-    if network_device in visited_devices:
-        rprint(f"[yellow]Already visited {network_device}, skipping.[/yellow]")
-        return
-
-    visited_devices.add(network_device)
-    temp_discovery_info = {}
+    visited_devices.add(ip)
 
     try:
-        with ConnectHandler(device_type='cisco_ios', ip=network_device, username=username, password=password) as net_connect:
+        with ConnectHandler(device_type='cisco_ios', ip=ip, username=username, password=password) as net_connect:
             dev_name = net_connect.find_prompt().strip("#")
-            rprint(f"[green]Connecting to {dev_name}[/green]")
+            rprint(f"[green]Connected to {dev_name} ({ip})[/green]")
 
-            for k, v in DISCOVERY_COMMANDS.items():
-                rprint(f"Sending command: {v}")
-                temp_discovery_info[dev_name + "_" + k] = net_connect.send_command(v, use_textfsm=True)
+            current_node = {
+                "ip": ip,
+                "neighbor_name": neighbor_name,
+                "platform": platform,
+                "device_name": dev_name,
+                "neighbors": {}
+            }
 
-            check_duplicate(temp_discovery_info, discovery_info)
+            parent_node[ip] = current_node
+
+            discovered_neighbors = []
+
+            for cmd in DISCOVERY_COMMANDS.values():
+                rprint(f"Sending command: {cmd}")
+                neighbors = net_connect.send_command(cmd, use_textfsm=True)
+
+                if isinstance(neighbors, list):
+                    for neighbor in neighbors:
+                        mgmt_ip = neighbor.get("mgmt_address")
+                        neighbor_name = neighbor.get("neighbor_name")
+                        platform = neighbor.get("platform", "Unknown")
+
+                        if mgmt_ip and "cisco" in platform.lower() and mgmt_ip not in visited_devices:
+                            discovered_neighbors.append({
+                                "ip": mgmt_ip,
+                                "neighbor_name": neighbor_name,
+                                "platform": platform,
+                                "parent": current_node["neighbors"]
+                            })
+
+            return discovered_neighbors
 
     except NetmikoTimeoutException:
-        rprint(f"[red]Timeout connecting to {neighbor_name} - {network_device} - {platform} [/red]")
-        log_error(f"Timeout connecting to {neighbor_name} - {network_device} - {platform}")
+        rprint(f"[red]Timeout connecting to {neighbor_name} - {ip} - {platform}[/red]")
     except NetmikoAuthenticationException:
-        rprint(f"[red]Authentication failed for {neighbor_name} - {network_device} - {platform} [/red]")
-        log_error(f"Authentication failed for {neighbor_name} - {network_device} - {platform}")
+        rprint(f"[red]Authentication failed for {neighbor_name} - {ip} - {platform}[/red]")
     except Exception as e:
-        rprint(f"[red]Unexpected error connecting to {neighbor_name} - {network_device} - {platform}: {e}[/red]")
-        log_error(f"Unexpected error connecting to {neighbor_name} - {network_device} - {platform}: {e}")
+        rprint(f"[red]Unexpected error connecting to {neighbor_name} - {ip} - {platform}: {e}[/red]")
 
+    return None
 
+def write_tree_to_file(tree, filename="discovery_tree.json"):
+    with open(filename, "w") as f:
+        json.dump(tree, f, indent=4)
+    rprint(f"[blue]Discovery complete. Tree written to {filename}[/blue]")
 
-def check_duplicate(temp_discovery_info, discovery_info):
-    for device, new_neighbors in temp_discovery_info.items():
-        if device not in discovery_info:
-            discovery_info[device] = new_neighbors
-        else:
-            existing_neighbors = discovery_info[device]
-            for neighbor in new_neighbors:
-                if neighbor not in existing_neighbors:
-                    existing_neighbors.append(neighbor)
-                    
-# Write errors to a log file
-def log_error(message):
-    with open("error_log.txt", "a") as log_file:
-        log_file.write(message + "\n")
+def main():
+    username, password = get_credentials()
+    discovery_tree = {}
+    device_queue = initialize_queue(network_devices)
 
+    while device_queue:
+        device = device_queue.pop(0)
+        new_neighbors = connect_and_discover(device, username, password)
+        if new_neighbors:
+            device_queue.extend(new_neighbors)
 
+    write_tree_to_file(discovery_tree)
 
 if __name__ == "__main__":
     main()
