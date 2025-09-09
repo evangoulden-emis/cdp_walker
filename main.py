@@ -21,13 +21,15 @@ def get_credentials():
     password = getpass(prompt="Enter Password: ")
     return username, password
 
-def initialize_queue(devices):
+
+def initialize_queue(devices, root_tree):
     return [{
         "ip": ip,
         "neighbor_name": "Root Device",
         "platform": "Unknown",
-        "parent": {}  # root of the tree
+        "parent": root_tree  # this is the actual root of the tree
     } for ip in devices]
+
 
 def connect_and_discover(device, username, password):
     ip = device["ip"]
@@ -91,10 +93,13 @@ def write_tree_to_file(tree, filename="discovery_tree.json"):
         json.dump(tree, f, indent=4)
     rprint(f"[blue]Discovery complete. Tree written to {filename}[/blue]")
 
+
 def main():
     username, password = get_credentials()
-    discovery_tree = {}
-    device_queue = initialize_queue(network_devices)
+    discovery_tree = {}  # root of the tree
+
+    # Pass discovery_tree into the queue initializer
+    device_queue = initialize_queue(network_devices, discovery_tree)
 
     while device_queue:
         device = device_queue.pop(0)
@@ -103,6 +108,7 @@ def main():
             device_queue.extend(new_neighbors)
 
     write_tree_to_file(discovery_tree)
+
 
 if __name__ == "__main__":
     main()
