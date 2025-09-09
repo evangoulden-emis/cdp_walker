@@ -34,7 +34,7 @@ def main():
             neighbor_name = neighbor.get('neighbor_name')
             mgmt_ip = neighbor.get('mgmt_address')
             platform = neighbor.get('platform')
-            print("Neighbor Details:")
+            print("   Neighbor Details:")
             print("---------------")
             print(f"  Local Interface: {local_int}")
             print(f"  Neighbor Name: {neighbor_name}")
