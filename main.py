@@ -106,7 +106,11 @@ def main():
         new_neighbors = connect_and_discover(device, username, password)
         if new_neighbors:
             device_queue.extend(new_neighbors)
-
+        print("-" * 40)
+        print(f"Devices left to process: {len(device_queue)}")
+        print(f"Visited devices: {len(visited_devices)}")
+        print(f"Current tree size: {len(discovery_tree)}")
+        print("-" * 40)
     write_tree_to_file(discovery_tree)
 
 
