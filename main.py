@@ -6,7 +6,7 @@ from pprint import pprint as pp
 from netmiko import ConnectHandler
 from netmiko.exceptions import NetmikoTimeoutException, NetmikoAuthenticationException
 
-CORES = [
+network_devices = [
     "10.139.2.96",
 ]
 
@@ -21,45 +21,43 @@ def main():
     discovery_info = {}
     visited_devices.clear()
 
-    print("Enter username: ")
+    print("Enter username: ", end="")
     username = input()
-    print("Enter password: ")
-    password = getpass()
+    password = getpass(prompt="Enter Password: ")
 
-    for core in CORES:
-        connect_to_core(core, username, password, discovery_info)
+    for network_device in network_devices:
+        connect_to_nd(network_device, username, password, discovery_info)
 
-    for device, neighbors in discovery_info.items():
+    for _, neighbors in discovery_info.items():
         for neighbor in neighbors:
             local_int = neighbor.get('local_interface')
             neighbor_name = neighbor.get('neighbor_name')
             mgmt_ip = neighbor.get('mgmt_address')
             platform = neighbor.get('platform')
-
+            print("Neighbor Details:")
+            print("---------------")
             print(f"  Local Interface: {local_int}")
             print(f"  Neighbor Name: {neighbor_name}")
             print(f"  Management IP: {mgmt_ip}")
             print(f"  Platform: {platform}")
-            print("---")
+            print("---------------")
 
             if "cisco" in platform.lower() and mgmt_ip not in visited_devices:
-                connect_to_core(mgmt_ip, username, password, discovery_info)
+                connect_to_nd(mgmt_ip, username, password, discovery_info)
 
             print("Device Info Size: ", len(discovery_info))
+            
 
-
-
-
-def connect_to_core(core, username, password, discovery_info):
-    if core in visited_devices:
-        rprint(f"[yellow]Already visited {core}, skipping.[/yellow]")
+def connect_to_nd(network_device, username, password, discovery_info):
+    if network_device in visited_devices:
+        rprint(f"[yellow]Already visited {network_device}, skipping.[/yellow]")
         return
 
-    visited_devices.add(core)
+    visited_devices.add(network_device)
     temp_discovery_info = {}
 
     try:
-        with ConnectHandler(device_type='cisco_ios', ip=core, username=username, password=password) as net_connect:
+        with ConnectHandler(device_type='cisco_ios', ip=network_device, username=username, password=password) as net_connect:
             dev_name = net_connect.find_prompt().strip("#")
             rprint(f"[green]Connecting to {dev_name}[/green]")
 
@@ -70,11 +68,11 @@ def connect_to_core(core, username, password, discovery_info):
             check_duplicate(temp_discovery_info, discovery_info)
 
     except NetmikoTimeoutException:
-        rprint(f"[red]Timeout connecting to {core}[/red]")
+        rprint(f"[red]Timeout connecting to {network_device}[/red]")
     except NetmikoAuthenticationException:
-        rprint(f"[red]Authentication failed for {core}[/red]")
+        rprint(f"[red]Authentication failed for {network_device}[/red]")
     except Exception as e:
-        rprint(f"[red]Unexpected error connecting to {core}: {e}[/red]")
+        rprint(f"[red]Unexpected error connecting to {network_device}: {e}[/red]")
 
 
 

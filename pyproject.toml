@@ -1,14 +1,16 @@
 [tool.poetry]
 name = "cdp-walker"
 version = "0.1.0"
-description = ""
+description = "CDP and LLDP Walker"
 authors = ["evlaa1990 <127751286+evangoulden-emis@users.noreply.github.com>"]
 
 #requires-python = ">=3.9"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
+python = ">=3.11,<4.0"
 netmiko = "^4.6.0"
+matplotlib = "^3.10.6"
+networkx = "^3.5"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
