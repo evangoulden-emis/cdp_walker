@@ -26,7 +26,7 @@ def main():
     password = getpass(prompt="Enter Password: ")
 
     for network_device in network_devices:
-        connect_to_nd(network_device, username, password, discovery_info)
+        connect_to_nd(network_device, username, password, discovery_info, neighbor_name="Root Device")
 
     for _, neighbors in discovery_info.items():
         for neighbor in neighbors:
@@ -43,7 +43,7 @@ def main():
             print("---------------")
 
             if "cisco" in platform.lower() and mgmt_ip not in visited_devices:
-                connect_to_nd(mgmt_ip, username, password, discovery_info)
+                connect_to_nd(mgmt_ip, username, password, discovery_info, neighbor_name, platform=platform)
 
             print("Device Info Size: ", len(discovery_info))
     
@@ -53,7 +53,7 @@ def main():
         
             
 
-def connect_to_nd(network_device, username, password, discovery_info):
+def connect_to_nd(network_device, username, password, discovery_info, neighbor_name, platform):
     if network_device in visited_devices:
         rprint(f"[yellow]Already visited {network_device}, skipping.[/yellow]")
         return
@@ -73,11 +73,14 @@ def connect_to_nd(network_device, username, password, discovery_info):
             check_duplicate(temp_discovery_info, discovery_info)
 
     except NetmikoTimeoutException:
-        rprint(f"[red]Timeout connecting to {network_device}[/red]")
+        rprint(f"[red]Timeout connecting to {neighbor_name} - {network_device} - {platform} [/red]")
+        log_error(f"Timeout connecting to {neighbor_name} - {network_device} - {platform}")
     except NetmikoAuthenticationException:
-        rprint(f"[red]Authentication failed for {network_device}[/red]")
+        rprint(f"[red]Authentication failed for {neighbor_name} - {network_device} - {platform} [/red]")
+        log_error(f"Authentication failed for {neighbor_name} - {network_device} - {platform}")
     except Exception as e:
-        rprint(f"[red]Unexpected error connecting to {network_device}: {e}[/red]")
+        rprint(f"[red]Unexpected error connecting to {neighbor_name} - {network_device} - {platform}: {e}[/red]")
+        log_error(f"Unexpected error connecting to {neighbor_name} - {network_device} - {platform}: {e}")
 
 
 
@@ -90,6 +93,12 @@ def check_duplicate(temp_discovery_info, discovery_info):
             for neighbor in new_neighbors:
                 if neighbor not in existing_neighbors:
                     existing_neighbors.append(neighbor)
+                    
+# Write errors to a log file
+def log_error(message):
+    with open("error_log.txt", "a") as log_file:
+        log_file.write(message + "\n")
+
 
 
 if __name__ == "__main__":
