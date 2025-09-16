@@ -56,7 +56,8 @@ def connect_and_discover(netconnect):
                 if isinstance(neighbors, list):
                     for neighbor in neighbors:
                         if neighbor['mgmt_address'] and neighbor['mgmt_address'] not in visited_devices:
-                            discovered_neighbors.append(neighbor)
+                            if neighbor['mgmt_address'] not in [d['mgmt_address'] for d in discovered_neighbors]:
+                                discovered_neighbors.append(neighbor)
 
             return discovered_neighbors
 
@@ -95,7 +96,7 @@ def main():
             netconnect.disconnect()            
         else:
             rprint("[red]Failed to create connection handler. Skipping device.[/red]")
-        
+
     # Write the discovery tree to a file once all devices have been processed.
     write_tree_to_file(device_fact_list)
 
