@@ -82,8 +82,9 @@ def main():
     device_fact_list = {}
 
     device_queue = initialize_queue()
-
+    count = 0
     while device_queue:
+        count += 1
         netconnect = create_connection_handler(device_queue.pop(0), username=username, password=password)
         if netconnect is not None:
             device_facts = get_facts_from_current_device(netconnect)
@@ -98,8 +99,11 @@ def main():
             rprint("[red]Failed to create connection handler. Skipping device.[/red]")
 
     # Write the discovery tree to a file once all devices have been processed.
-    write_tree_to_file(device_fact_list)
-
+    if count > 1:
+        write_tree_to_file(device_fact_list)
+    else: 
+        rprint("[red]No devices were discovered.[/red]")
+        
 
 def get_facts_from_current_device(netconnect):
     facts = {}
